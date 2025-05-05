@@ -1,0 +1,164 @@
+<html>
+  <head>
+    <title>Lap Tracker</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: #222;
+        color: #fff;
+      }
+
+      #tap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 50vh;
+        width: 100vw;
+        background-color: #f20;
+        color: #fff;
+        font-weight: 700;
+        font-size: 20vh;
+        border-bottom: solid 2px #fff;
+      }
+
+      #tap.running {
+        background-color: #4d0;
+        color: #222;
+      }
+
+      #tap.success {
+        background-color: #fc2;
+        color: #222;
+      }
+
+      #details {
+        padding: 10px;
+      }
+
+      #details > div {
+        margin-top: 10px;
+      }
+
+      #details > div > div:first-child {
+        font-size: 1.5vh;
+        color: #ccc;
+        font-style: italic;
+      }
+
+      #details > div > div:last-child {
+        width: 100%;
+        text-align: right;
+        font-size: 6vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="tap">GO</div>
+    <div id="details">
+      <div>
+        <div>Time Elapsed</div>
+        <div id="time">00:00.00</div>
+      </div>
+      <div>
+        <div>Estimated Distance</div>
+        <div id="distance">0.00 mi</div>
+      </div>
+      <div>
+        <div>Estimated Pace</div>
+        <div id="pace">0:00 / mi</div>
+      </div>
+      <div>
+        <div>Last Lap</div>
+        <div id="lap">00:00.00</div>
+      </div>
+    </div>
+    <!-- <div id="button-row">
+      <div class="button">SPLITS</div>
+      <div class="button">SETTINGS</div>
+    </div> -->
+    <script>
+      let laps = 0;
+      let startTime = 0;
+      let elapsedTime = 0;
+      let timer = null;
+      let lapTimes = [];
+      let target = 36;
+      let lapsPerMile = 12;
+
+      const tapElement = document.querySelector('#tap');
+      tapElement.addEventListener('click', () => {
+        if (laps === target) return;
+        if (!timer) {
+          // this means we're starting
+          startTime = new Date().getTime();
+          timer = setTimeout(advanceTime, 0);
+          tapElement.classList.add('running');
+        } else {
+          laps += 1;
+          // make a new lap with lap time
+          const lastLap = lapTimes[lapTimes.length - 1];
+          lastLap.end = elapsedTime;
+          lastLap.elapsed = lastLap.end - lastLap.start;
+
+          if (laps === target) {
+            clearTimeout(timer);
+            timer = null;
+            tapElement.classList.remove('running');
+            tapElement.classList.add('success');
+          }
+        }
+        const newLap = {
+          start: elapsedTime,
+          end: null,
+          elapsed: null
+        };
+        lapTimes.push(newLap);
+        tapElement.innerHTML = `${laps} <span style="margin-left: 50px;font-size: 4rem">of ${target}</span>`;
+      });
+
+      const advanceTime = () => {
+        const now = new Date().getTime();
+        elapsedTime = now - startTime;
+        timer = setTimeout(advanceTime, 30);
+      }
+
+      const formatTime = (time, noMilliseconds) => {
+        const minutes = Math.floor(time / (60000));
+        const seconds = Math.floor(time / 1000) % 60;
+        const milliseconds = time % 1000;
+
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}${
+        noMilliseconds ? '' : '.' + milliseconds.toString().padStart(3, '0')}`;
+      }
+
+      const timeElement = document.querySelector('#time');
+      const lapElement = document.querySelector('#lap');
+      const distanceElement = document.querySelector('#distance');
+      const paceElement = document.querySelector('#pace');
+      const displayTime = () => {
+        timeElement.innerHTML = formatTime(elapsedTime, true);
+
+        const lastLapElapsedTime = (lapTimes[lapTimes.length - 2] || {}).elapsed
+        lapElement.innerHTML = lastLapElapsedTime ? formatTime(lastLapElapsedTime) : '-';
+
+        const realDistance = laps / lapsPerMile;
+        const currentLapStart = (lapTimes[lapTimes.length - 1] || { start: 1 }).start;
+        const estPctOfLap = Math.min((elapsedTime - currentLapStart) / (lastLapElapsedTime * 1.05), 1); // estimate that I get 5% slower every lap
+        const estDistance = realDistance + (estPctOfLap / lapsPerMile);
+        const wholePart = Math.floor(estDistance);
+        const decimalPart = Math.round(estDistance * 100) % 100;
+        if (Number.isNaN(estDistance)) distanceElement.innerHTML = '-';
+        else distanceElement.innerHTML = `${wholePart}.${decimalPart.toString().padEnd(2, '0')} mi`;
+
+        const pace = elapsedTime / estDistance;
+        if (Number.isNaN(pace)) paceElement.innerHTML = '-';
+        else paceElement.innerHTML = `${formatTime(pace, true)} / mi`;
+
+        window.requestAnimationFrame(displayTime);
+      }
+      window.requestAnimationFrame(displayTime);
+    </script>
+  </body>
+</html>
