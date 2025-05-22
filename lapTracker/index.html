@@ -152,7 +152,7 @@
         const estDistance = realDistance + (estPctOfLap / lapsPerMile);
         const wholePart = Math.floor(estDistance);
         const decimalPart = Math.round(estDistance * 100) % 100;
-        const decimalDisplay = decimalPart < 0.1 ? decimalPart.toString().padStart(2, '0') : decimalPart.toString().padEnd(2, '0');
+        const decimalDisplay = decimalPart < 10 ? decimalPart.toString().padStart(2, '0') : decimalPart.toString().padEnd(2, '0');
         if (Number.isNaN(estDistance)) distanceElement.innerHTML = '-';
         else distanceElement.innerHTML = `${wholePart}.${decimalDisplay} mi`;
 
